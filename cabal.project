@@ -1,0 +1,4 @@
+packages: *.cabal
+
+package bindings-GLFW
+  flags: +system-GLFW
