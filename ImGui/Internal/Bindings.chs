@@ -12,14 +12,11 @@
 module ImGui.Internal.Bindings where
 
 import Foreign.C
-import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.Storable
 import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
-import Data.Maybe (fromMaybe)
-import Control.Monad (liftM)
 
 -- Enums
 {# enum ImGuiCol_ as ImGuiCol {} deriving (Show, Eq) #}
