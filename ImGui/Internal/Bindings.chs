@@ -93,6 +93,7 @@ framerate = fmap realToFrac . {# get ImGuiIO.Framerate #}
 
 -- Utility functions
 
+withOne :: (Storable a, Num a) => (Ptr a -> IO b) -> IO b
 withOne f = with 1 f
 
 maybeFontAtlas :: Maybe ImFontAtlas -> ImFontAtlas
