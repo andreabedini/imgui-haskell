@@ -8,11 +8,6 @@ build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
 
-Flag LoaderGlew
-  Description:  Use GLEW loader
-  Default:      True
-  Manual:       True
-
 library
   build-depends:       base >=4.13 && <4.15
                      , GLFW-b
@@ -23,20 +18,18 @@ library
   default-language:    Haskell2010
   cxx-sources:         cimgui/cimgui.cpp
                      , cimgui/imgui/imgui.cpp
-                     , cimgui/imgui/imgui_draw.cpp
                      , cimgui/imgui/imgui_demo.cpp
+                     , cimgui/imgui/imgui_draw.cpp
                      , cimgui/imgui/imgui_widgets.cpp
                      , cimgui/imgui/examples/imgui_impl_opengl3.cpp
                      , cimgui/imgui/examples/imgui_impl_glfw.cpp
-  cxx-options:         -g -Wall
+  cxx-options:         -Wall -O2 -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit
                        "-DIMGUI_IMPL_API=extern \"C\""
                        -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
-  if flag(LoaderGlew)
-    cxx-options:       -DIMGUI_IMPL_OPENGL_LOADER_GLEW
-    exposed-modules:   Graphics.UI.GLEW
-    extra-libraries:   GLEW
+                       -DIMGUI_IMPL_OPENGL_LOADER_GLEW
+  exposed-modules:     Graphics.UI.GLEW
+  extra-libraries:     GLEW
 
-  extra-libraries:     c++
   include-dirs:        cimgui
                      , cimgui/generator/output
                      , cimgui/imgui
@@ -50,4 +43,3 @@ executable test
                      , GLFW-b
                      , OpenGL
   default-language:    Haskell2010
-  extra-libraries:     c++
