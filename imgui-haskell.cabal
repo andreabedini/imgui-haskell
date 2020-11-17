@@ -1,5 +1,5 @@
 cabal-version:       2.2
-name:                imgui-haskell2
+name:                imgui-haskell
 version:             0.1.0.0
 license-file:        LICENSE
 author:              Andrea Bedini
@@ -14,7 +14,7 @@ Flag LoaderGlew
   Manual:       True
 
 library
-  build-depends:       base >=4.13 && <4.14
+  build-depends:       base >=4.13 && <4.15
                      , GLFW-b
                      , bindings-GLFW
   exposed-modules:     ImGui
@@ -43,10 +43,10 @@ library
   build-tool-depends:  c2hs:c2hs
   ghc-options:         -Wall
 
-executable imgui-haskell2
+executable test
   main-is:             Main.hs
-  build-depends:       base >=4.13 && <4.14
-                     , imgui-haskell2
+  build-depends:       base >=4.13 && <4.15
+                     , imgui-haskell
                      , GLFW-b
                      , OpenGL
   default-language:    Haskell2010
