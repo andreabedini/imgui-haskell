@@ -24,14 +24,6 @@ withWindow f = do
 
   GLFW.terminate
 
--- update :: GLFW.Window -> IO ()
--- update _ = do
---  openGL3NewFrame
---  glfwNewFrame
---  newFrame
-
---  showDemoWindow False
-
 
 loop window do_stuff = do
   r <- GLFW.windowShouldClose window
