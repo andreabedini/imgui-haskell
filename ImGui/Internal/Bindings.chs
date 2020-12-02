@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include <cimgui.h>
@@ -18,22 +19,222 @@ import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
 
--- Enums
+
+-------------------------------------------------------------------------------
+-- Forward declarations and basic types
+-------------------------------------------------------------------------------
+
+{# pointer *ImDrawChannel #}
+{# pointer *ImDrawCmd #}
+{# pointer *ImDrawData #}
+{# pointer *ImDrawList #}
+{# pointer *ImDrawListSharedData #}
+{# pointer *ImDrawListSplitter #}
+{# pointer *ImDrawVert #}
+{# pointer *ImFont #}
+{# pointer *ImFontAtlas #}
+{# pointer *ImFontConfig #}
+{# pointer *ImFontGlyph #}
+{# pointer *ImFontGlyphRangesBuilder #}
+{# pointer *ImColor #}
+{# pointer *ImGuiContext #}
+{# pointer *ImGuiIO #}
+{# pointer *ImGuiInputTextCallbackData #}
+{# pointer *ImGuiListClipper #}
+{# pointer *ImGuiOnceUponAFrame #}
+{# pointer *ImGuiPayload #}
+{# pointer *ImGuiSizeCallbackData #}
+{# pointer *ImGuiStorage #}
+{# pointer *ImGuiStyle #}
+{# pointer *ImGuiTextBuffer #}
+{# pointer *ImGuiTextFilter #}
+
+
 {# enum ImGuiCol_ as ImGuiCol {} deriving (Show, Eq) #}
+{# enum ImGuiCond_ as ImGuiCond {} deriving (Show, Eq) #}
+{# enum ImGuiDataType_ as ImGuiDataType {} deriving (Show, Eq) #}
+{# enum ImGuiDir_ as ImGuiDir {} deriving (Show, Eq) #}
+{# enum ImGuiKey_ as ImGuiKey {} deriving (Show, Eq) #}
+{# enum ImGuiNavInput_ as ImGuiNavInput {} deriving (Show, Eq) #}
+{# enum ImGuiMouseButton_ as ImGuiMouseButton {} deriving (Show, Eq) #}
+{# enum ImGuiMouseCursor_ as ImGuiMouseCursor {} deriving (Show, Eq) #}
+{# enum ImGuiStyleVar_ as ImGuiStyleVar {} deriving (Show, Eq) #}
+{# enum ImDrawCornerFlags_ as ImDrawCornerFlags {} deriving (Show, Eq) #}
+{# enum ImDrawListFlags_ as ImDrawListFlags {} deriving (Show, Eq) #}
+{# enum ImFontAtlasFlags_ as ImFontAtlasFlags {} deriving (Show, Eq) #}
+{# enum ImGuiBackendFlags_ as ImGuiBackendFlags {} deriving (Show, Eq) #}
+{# enum ImGuiButtonFlags_ as ImGuiButtonFlags {} deriving (Show, Eq) #}
 {# enum ImGuiColorEditFlags_ as ImGuiColorEditFlags {} deriving (Show, Eq) #}
+{# enum ImGuiConfigFlags_ as ImGuiConfigFlags {} deriving (Show, Eq) #}
+{# enum ImGuiComboFlags_ as ImGuiComboFlags {} deriving (Show, Eq) #}
+{# enum ImGuiDragDropFlags_ as ImGuiDragDropFlags {} deriving (Show, Eq) #}
+{# enum ImGuiFocusedFlags_ as ImGuiFocusedFlags {} deriving (Show, Eq) #}
+{# enum ImGuiHoveredFlags_ as ImGuiHoveredFlags {} deriving (Show, Eq) #}
 {# enum ImGuiInputTextFlags_ as ImGuiInputTextFlags {} deriving (Show, Eq) #}
+{# enum ImGuiKeyModFlags_ as ImGuiKeyModFlags {} deriving (Show, Eq) #}
+{# enum ImGuiPopupFlags_ as ImGuiPopupFlags {} deriving (Show, Eq) #}
+{# enum ImGuiSelectableFlags_ as ImGuiSelectableFlags {} deriving (Show, Eq) #}
 {# enum ImGuiSliderFlags_ as ImGuiSliderFlags {} deriving (Show, Eq) #}
+{# enum ImGuiTabBarFlags_ as ImGuiTabBarFlags {} deriving (Show, Eq) #}
+{# enum ImGuiTabItemFlags_ as ImGuiTabItemFlags {} deriving (Show, Eq) #}
+{# enum ImGuiTreeNodeFlags_ as ImGuiTreeNodeFlags {} deriving (Show, Eq) #}
 {# enum ImGuiWindowFlags_ as ImGuiWindowFlags {} deriving (Show, Eq) #}
 
-{# pointer *ImVec2 as ImVec2Ptr foreign newtype #}
-{# pointer *ImVec4 as ImVec4Ptr foreign newtype #}
-{# pointer *ImFontAtlas as ImFontAtlas  #}
-{# pointer *ImDrawData as ImDrawData #}
-{# pointer *ImGuiContext as ImGuiContext #}
-{# pointer *ImGuiIO as ImGuiIO #}
-{# pointer *ImGuiStyle as ImGuiStyle #}
-{# pointer *ImGuiID as ImGuiID #}
-{# pointer *ImGuiInputTextCallback as ImGuiInputTextCallback #}
+{# pointer *ImGuiID #}
+{# pointer *ImGuiInputTextCallback #}
+{# pointer *ImGuiSizeCallback #}
+
+{# pointer *ImVec2 #}
+
+imVec2_x :: ImVec2 -> IO Float
+imVec2_x = fmap realToFrac . {# get ImVec2.x #}
+
+imVec2_y :: ImVec2 -> IO Float
+imVec2_y = fmap realToFrac . {# get ImVec2.y #}
+
+{# pointer *ImVec4 #}
+
+-------------------------------------------------------------------------------
+-- ImGui: Dear ImGui end-user API
+-------------------------------------------------------------------------------
+
+-- Context creation and access
+-- Each context create its own ImFontAtlas by default. You may instance one
+-- yourself and pass it to CreateContext() to share a font atlas between imgui
+-- contexts.
+-- None of those functions is reliant on the current context.
+
+{# fun igCreateContext as createContext { maybeFontAtlas `Maybe ImFontAtlas' } -> `ImGuiContext' #}
+{# fun igDestroyContext as destroyContext { `ImGuiContext' } -> `()' #}
+{# fun igGetCurrentContext as getCurrentContext { } -> `ImGuiContext' #}
+{# fun igSetCurrentContext as setCurrentContext { `ImGuiContext' } -> `()' #}
+
+-- Main
+
+{-|
+  access the IO structure (mouse/keyboard/gamepad inputs, time, various
+  configuration options/flags)
+-}
+{# fun igGetIO as getIO { } -> `ImGuiIO' #}
+
+{-|
+  access the Style structure (colors, sizes). Always use PushStyleCol(),
+  PushStyleVar() to modify style mid-frame!
+-}
+{# fun igGetStyle as getStyle { } -> `ImGuiStyle' #}
+
+{-|
+  start a new Dear ImGui frame, you can submit any command from this point
+  until Render()/EndFrame().
+-}
+{# fun igNewFrame as newFrame { } -> `()' #}
+
+{-|
+  ends the Dear ImGui frame. automatically called by Render(). If you don't
+  need to render data (skipping rendering) you may call EndFrame() without
+  Render()... but you'll have wasted CPU already! If you don't need to
+  render, better to not create any windows and not call NewFrame() at all!
+-}
+{# fun igEndFrame as endFrame { } -> `()' #}
+
+{-|
+  ends the Dear ImGui frame, finalize the draw data. You can get call
+  GetDrawData() to obtain it and run your rendering function (up to v1.60,
+  this used to call io.RenderDrawListsFn(). Nowadays, we allow and prefer
+  calling your render function yourself.)
+-}
+{# fun igRender as render { } -> `()' #}
+
+{-|
+  valid after Render() and until the next call to NewFrame(). this is what
+  you have to render.
+-}
+{# fun igGetDrawData as getDrawData { } -> `ImDrawData' #}
+
+-- Demo, Debug, Information
+
+{-|
+  create Demo window (previously called ShowTestWindow). demonstrate most
+  ImGui features. call this to learn about the library! try to make it
+  always available in your application!
+-}
+{# fun igShowDemoWindow as showDemoWindow { withOne- `Bool' peekBool* } -> `()' #}
+
+{-|
+  create About window. display Dear ImGui version, credits and build/system
+  information.
+-}
+{# fun igShowAboutWindow as showAboutWindow { withOne- `Bool' peekBool* } -> `()' #}
+
+{-|
+  create Debug/Metrics window. display Dear ImGui internals: draw commands
+  (with individual draw calls and vertices), window list, basic internal
+  state, etc.
+-}
+{# fun igShowMetricsWindow as showMetricsWindow { withOne- `Bool' peekBool* } -> `()' #}
+
+{-|
+  add style editor block (not a window). you can pass in a reference
+  ImGuiStyle structure to com pare to, revert to and save to (else it uses
+  the default style)
+-}
+{# fun igShowStyleEditor as showStyleEditor { `ImGuiStyle' } -> `()' #}
+
+{-|
+   add style selector block (not a window), essentially a combo listing the
+   default styles.
+-}
+{# fun igShowStyleSelector as showStyleSelector { `String' } -> `Bool' #}
+
+{-|
+  add font selector block (not a window), essentially a combo listing the
+  loaded fonts.
+-}
+{# fun igShowFontSelector as showFontSelector { `String' } -> `()' #}
+
+{-|
+  add basic help/info block (not a window): how to manipulate ImGui as a
+  end-user (mouse/keyboard controls).
+-}
+{# fun igShowUserGuide as showUserGuide { } -> `()' #}
+
+{-|
+  get the compiled version string e.g. "1.23" (essentially the compiled
+  value for IMGUI_VERSION)
+-}
+{# fun igGetVersion as getVersion { } -> `String' #}
+
+-- Styles
+
+{-| new, recommended style (default) -}
+{# fun igStyleColorsDark as styleColorsDark { `ImGuiStyle' } -> `()' #}
+
+{-| classic imgui style -}
+{# fun igStyleColorsClassic as styleColorsClassic { `ImGuiStyle' } -> `()' #}
+
+{-| best used with borders and a custom, thicker font -}
+{# fun igStyleColorsLight as styleColorsLight { `ImGuiStyle' } -> `()' #}
+
+-- Windows
+
+{# fun igBegin as begin { `String', withOne- `Bool' peekBool*, `ImGuiWindowFlags' } -> `Bool' #}
+{# fun igEnd as end { } -> `()' #}
+
+-- Child Windows
+
+{# fun igBeginChildStr as beginChildStr { `String', %`ImVec2', `Bool', `ImGuiWindowFlags' } -> `()' #}
+{# fun igBeginChildID as beginChildID { %`ImGuiID', %`ImVec2', `Bool', `ImGuiWindowFlags' } -> `()' #}
+{# fun igEndChild as endChild { } -> `()' #}
+
+-- Windows Utilities
+
+{# fun igIsWindowAppearing as isWindowAppearing { } -> `Bool' #}
+{# fun igIsWindowCollapsed as isWindowCollapsed { } -> `Bool' #}
+{# fun igIsWindowFocused as isWindowFocused { `ImGuiFocusedFlags' } -> `Bool' #}
+{# fun igIsWindowHovered as isWindowHovered { `ImGuiHoveredFlags' } -> `Bool' #}
+
+{# fun igGetWindowDrawList as getWindowDrawList { } -> `ImDrawList' #}
+{# fun igGetWindowPos as getWindowPos { kazoom- `ImVec2' peek* } -> `()' #}
 
 framerate :: ImGuiIO -> IO Double
 framerate = fmap realToFrac . {# get ImGuiIO.Framerate #}
@@ -44,35 +245,8 @@ framerate = fmap realToFrac . {# get ImGuiIO.Framerate #}
 {# fun ImGui_ImplOpenGL3_RenderDrawData as openGL3RenderDrawData { `ImDrawData' } -> `()' #}
 {# fun ImGui_ImplOpenGL3_Shutdown as openGL3Shutdown { } -> `()' #}
 
--- Imgui functions
-{# fun igCreateContext as createContext { maybeFontAtlas `Maybe ImFontAtlas' } -> `ImGuiContext' #}
-{# fun igDestroyContext as destroyContext { `ImGuiContext' } -> `()' #}
-{# fun igGetCurrentContext as getCurrentContext { } -> `ImGuiContext' #}
-{# fun igSetCurrentContext as setCurrentContext { `ImGuiContext' } -> `()' #}
-{# fun igGetIO as getIO { } -> `ImGuiIO' #}
-{# fun igGetStyle as getStyle { } -> `ImGuiStyle' #}
-{# fun igNewFrame as newFrame { } -> `()' #}
-{# fun igEndFrame as endFrame { } -> `()' #}
-{# fun igRender as render { } -> `()' #}
-{# fun igGetDrawData as getDrawData { } -> `ImDrawData' #}
-{# fun igShowDemoWindow as showDemoWindow { `Bool' } -> `()' #}
-{# fun igShowAboutWindow as showAboutWindow { `Bool' } -> `()' #}
-{# fun igShowMetricsWindow as showMetricsWindow { `Bool' } -> `()' #}
-{# fun igShowStyleEditor as showStyleEditor { `ImGuiStyle' } -> `()' #}
-{# fun igShowStyleSelector as showStyleSelector { `String' } -> `Bool' #}
-{# fun igShowFontSelector as showFontSelector { `String' } -> `()' #}
-{# fun igShowUserGuide as showUserGuide { } -> `()' #}
-{# fun igGetVersion as getVersion { } -> `String' #}
-{# fun igStyleColorsDark as styleColorsDark { `ImGuiStyle' } -> `()' #}
-{# fun igStyleColorsClassic as styleColorsClassic { `ImGuiStyle' } -> `()' #}
-{# fun igStyleColorsLight as styleColorsLight { `ImGuiStyle' } -> `()' #}
 
-{# fun igBegin as begin { `String', withOne- `Bool' peekBool*, `ImGuiWindowFlags' } -> `Bool' #}
-{# fun igEnd as end { } -> `()' #}
-
-{# fun igBeginChildID as beginChildID { %`ImGuiID', %`ImVec2Ptr', `Bool', `ImGuiWindowFlags' } -> `()' #}
-{# fun igEndChild as endChild { } -> `()' #}
-{# fun igButton as button {`String', %`ImVec2Ptr'} -> `Bool'#}
+{# fun igButton as button {`String', %`ImVec2' } -> `Bool'#}
 {# fun igText as text { `String' } -> `()' #}
 {# fun igPopStyleColor as popStyleColor { `Int' } -> `()' #}
 {# fun igInputText as inputText  { `String', `String' peekCString*, `Int', cFromEnum `ImGuiInputTextFlags', id `FunPtr (Ptr () -> IO CInt)' , `Ptr ()'  } -> `Bool' #}
@@ -84,14 +258,21 @@ framerate = fmap realToFrac . {# get ImGuiIO.Framerate #}
 {# fun igSliderInt3 as sliderInt3 { `String', alloca3- `[Int]' peekIntegralArray3*, `Int', `Int', `String', `ImGuiSliderFlags' } -> `Bool' #}
 {# fun igSliderInt4 as sliderInt4 { `String', alloca4- `[Int]' peekIntegralArray4*, `Int', `Int', `String', `ImGuiSliderFlags' } -> `Bool' #}
 
--- Creating structs
-{# fun pure ImVec2_ImVec2Float as makeImVec2 {`Float', `Float'} -> `ImVec2Ptr'#}
-{# fun pure ImVec4_ImVec4Float as makeImVec4 {`Float', `Float', `Float', `Float'} -> `ImVec4Ptr'#}
+-- Creating structsA
+{# fun ImVec2_ImVec2Nil as createImVec2 {} -> `ImVec2' #}
+{# fun pure ImVec2_ImVec2Float as makeImVec2 {`Float', `Float'} -> `ImVec2'#}
+--{# fun pure ImVec4_ImVec4Float as makeImVec4 {`Float', `Float', `Float', `Float'} -> `ImVec4'#}
 
 -- Utility functions
 
+kazoom :: (ImVec2 -> IO ()) -> IO ImVec2
+kazoom f = do
+  v <- createImVec2
+  f v
+  pure v
+
 withOne :: (Storable a, Num a) => (Ptr a -> IO b) -> IO b
-withOne f = with 1 f
+withOne = with 1
 
 maybeFontAtlas :: Maybe ImFontAtlas -> ImFontAtlas
 maybeFontAtlas = maybe nullPtr id

@@ -69,6 +69,12 @@ main = do
       sw <- readIORef showWindow
       when sw $ do
         (isVisible, isOpen) <- ImGui.begin "Test" ImGui.ImGuiWindowFlags_None
+
+        p <- ImGui.getWindowPos
+        x <- ImGui.imVec2_x p
+        y <- ImGui.imVec2_y p
+        putStrLn (show x ++ " " ++ show y)
+
         when isVisible $ do
           ImGui.text "Test"
           b <- ImGui.button "Test" (ImGui.makeImVec2 0 0)

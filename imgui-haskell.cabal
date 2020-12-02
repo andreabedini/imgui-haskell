@@ -27,7 +27,6 @@ library
                        "-DIMGUI_IMPL_API=extern \"C\""
                        -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
                        -DIMGUI_IMPL_OPENGL_LOADER_GLEW
-  exposed-modules:     Graphics.UI.GLEW
   extra-libraries:     GLEW
 
   include-dirs:        cimgui
@@ -42,4 +41,5 @@ executable test
                      , imgui-haskell
                      , GLFW-b
                      , OpenGL
+  other-modules:       Graphics.UI.GLEW
   default-language:    Haskell2010
